@@ -11,13 +11,20 @@ jobs:
     runs-on: ubuntu-latest
     container: ubuntu:20.04
     steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive # <-- This tells GitHub to fetch the missing folders
-    
-    - name: Install dependencies (curl, wget, libssl1.1)
+    ## NEW: Install Git first so the checkout action can handle submodules
+    - name: Install Git
       run: |
         apt-get update
+        apt-get install git -y
+
+    ## FIXED: Checkout with submodules now that Git is installed
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Install dependencies (curl, wget, libssl1.1)
+      # Removed apt-get update here since it runs in the Git step above
+      run: |
         apt-get install curl wget libssl1.1 -y 
         
     ## UPDATED: SonarScanner requires Java 17+. Embold will also work fine with this.
@@ -38,17 +45,12 @@ jobs:
         
     ## NEW: Start SonarScanner (Hook into build)
     - name: SonarScanner Begin
-      # Note: Replace "your_organization_key" with your actual SonarCloud organization key
       run: dotnet sonarscanner begin /k:"vcatest_PixiEditor" /o:"vcatest" /d:sonar.token="96776fa54a595ed6a86cfb00e41cf351b5af5c0e" /d:sonar.host.url="https://sonarcloud.io/"
 
     ## NEW: Build the project (Required for Sonar analysis)
     - name: Build Project
       working-directory: ./src # Change to the folder containing your .sln/.csproj
       run: dotnet build -p:EnableWindowsTargeting=true -p:PostBuildEvent=
-      
-    ## NEW: Build the project (Required for Sonar analysis)
-   ## - name: Build Project
-    ##  run: dotnet build # Add your .sln or .csproj path here if it's not in the root directory
       
     ## NEW: End SonarScanner (Upload analysis to Sonar server)
     - name: SonarScanner End
