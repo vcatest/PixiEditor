@@ -12,6 +12,8 @@ jobs:
     container: ubuntu:20.04
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: recursive # <-- This tells GitHub to fetch the missing folders
     
     - name: Install dependencies (curl, wget, libssl1.1)
       run: |
